@@ -1,10 +1,11 @@
 # Ivy Homes Property API — Pune Audit & Web Application
 
-**Candidate**: Amit Kumar (`@mnnit.ac.in`)  
+**Candidate**: Amit Kumar 
 **Assigned City**: Pune  
 **Assigned Locality**: Hadapsar  
 **Repository**: [github.com/amit3045/ivy-homes-assignment](https://github.com/amit3045/ivy-homes-assignment)  
-**Live Demo**: [ivyassignment.vercel.app](https://ivyassignment.vercel.app)  
+**Live Demo**: [ivy-homes-assignment-2uul.vercel.app](ivy-homes-assignment-2uul.vercel.app
+)  
 
 ---
 
