@@ -3,8 +3,8 @@
 **Candidate**: Amit Kumar (`@mnnit.ac.in`)  
 **Assigned City**: Pune  
 **Assigned Locality**: Hadapsar  
-**Repository**: [github.com/amitkumar/ivy-homes-assignment](https://github.com/amitkumar/ivy-homes-assignment)  
-**Live Demo**: [ivy-homes-pune.vercel.app](https://ivy-homes-pune.vercel.app)  
+**Repository**: [github.com/amit3045/ivy-homes-assignment](https://github.com/amit3045/ivy-homes-assignment)  
+**Live Demo**: [ivyassignment.vercel.app](https://ivyassignment.vercel.app)  
 
 ---
 
@@ -16,7 +16,7 @@
 ### Local Setup & Development
 ```bash
 # 1. Clone the repository
-git clone https://github.com/amitkumar/ivy-homes-assignment.git
+git clone https://github.com/amit3045/ivy-homes-assignment.git
 cd ivy-homes-assignment/app
 
 # 2. Install dependencies
