@@ -1,0 +1,239 @@
+{
+  "api_key": "IVY26-5889BD9197FA",
+  "candidate": {
+    "name": "Amit Kumar",
+    "email": "amitkumar@mnnit.ac.in",
+    "repo_url": "https://github.com/amitkumar/ivy-homes-assignment",
+    "demo_url": "https://ivy-homes-pune.vercel.app"
+  },
+  "answers": {
+    "total_listing_records": 3700,
+    "unique_properties": 50,
+    "active_listings": 2960,
+    "corrupt_listing_ids": [
+      "MAG-3001035",
+      "MAG-3001327",
+      "MAG-3001519",
+      "MAG-3003434"
+    ],
+    "total_monthly_rent": 5432000,
+    "avg_price_per_sqft_2bhk": 10789.96,
+    "costliest_project": {
+      "project_id": "P30030",
+      "price_max_inr": 33400000
+    },
+    "listings_last_7_days": 74,
+    "fake_listing_ids": [
+      "ZER-3001479"
+    ],
+    "projects_with_wrong_listing_count": 423
+  },
+  "findings": [
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "API key passed as query parameter ?api_key=IVY26-XXXXXXXXXXXX",
+      "actual": "Requests fail with 401 error requiring API key in request header X-API-Key: IVY26-5889BD9197FA",
+      "how_found": "Tested initial GET /v1/listings?api_key=... request which returned 401 missing header error",
+      "impact": "High - unauthenticated error on all API requests if passed via query string",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "API key alone authenticates collection endpoints; user bearer token is only for session operations",
+      "actual": "General collection endpoints /v1/listings, /v1/rentals, and /v1/projects require a Bearer token header obtained from POST /auth/login",
+      "how_found": "Sent requests with X-API-Key header which returned 401 missing bearer token error",
+      "impact": "High - prevents accessing any property endpoints without user authentication",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/login",
+      "category": "auth",
+      "documented": "Returns token field with expires_in 86400 (24h) and states there is no refresh flow",
+      "actual": "Returns access_token, expires_in 900 (15 minutes), refresh_token, and refresh_url: /auth/refresh",
+      "how_found": "Inspected JSON payload from POST /auth/login response",
+      "impact": "Medium - session expires much faster (15 mins vs 24h) and requires refresh handling",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/refresh",
+      "category": "undocumented_endpoint",
+      "documented": "Explicitly claims there is no refresh flow in the API",
+      "actual": "Server exposes working /auth/refresh endpoint for renewing access tokens using refresh_token",
+      "how_found": "Observed refresh_url in POST /auth/login response and tested POST /auth/refresh",
+      "impact": "Medium - enables seamless session extension",
+      "evidence": []
+    },
+    {
+      "endpoint": "/health",
+      "category": "timestamps",
+      "documented": "Returns service status and server clock in UTC with Z suffix",
+      "actual": "Returns server_time carrying explicit +05:30 IST offset, plus timezone Asia/Kolkata and reference_date fields",
+      "how_found": "Called GET /health endpoint before testing other routes",
+      "impact": "Low - timezone explicitly specified as IST",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/analytics/summary",
+      "category": "missing_endpoint",
+      "documented": "Pre-computed city aggregates for dashboard screen",
+      "actual": "Returns 404 Not Found error",
+      "how_found": "Called GET /v1/analytics/summary with valid API key and auth headers",
+      "impact": "High - analytics dashboard cannot rely on pre-computed server endpoint",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/favourites",
+      "category": "missing_endpoint",
+      "documented": "User favourites collection management endpoints (GET, POST, DELETE)",
+      "actual": "Returns 404 Not Found error",
+      "how_found": "Tested GET /v1/favourites with valid bearer token",
+      "impact": "High - saved listings must be managed client-side in localStorage",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings/{id}/similar",
+      "category": "missing_endpoint",
+      "documented": "Returns up to ten comparable listings for a given listing ID",
+      "actual": "Returns 404 Not Found error",
+      "how_found": "Called GET /v1/listings/DWE-3002501/similar",
+      "impact": "Medium - similar listings strip requires client-side calculation",
+      "evidence": [
+        "DWE-3002501"
+      ]
+    },
+    {
+      "endpoint": "/v1/listing/{id}",
+      "category": "missing_endpoint",
+      "documented": "Single listing path documented as GET /v1/listing/{listing_id} (singular)",
+      "actual": "GET /v1/listing/{id} returns 404 Not Found; correct path is plural GET /v1/listings/{id}",
+      "how_found": "Tested singular /v1/listing/DWE-3002501 vs plural /v1/listings/DWE-3002501",
+      "impact": "High - detail routing breaks if using documented singular path",
+      "evidence": [
+        "DWE-3002501"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "Supports limit parameter up to 200, and total metadata reports exact count of matching records",
+      "actual": "Server caps limit at 50 records per page, and total field reports 3668 while actual retrievable count is 3700",
+      "how_found": "Requested limit=200 on /v1/listings and paged all results to end",
+      "impact": "Medium - client must paginate using max page size of 50",
+      "evidence": [
+        "DWE-3002501"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "filters",
+      "documented": "project_id query parameter filters listings by builder project",
+      "actual": "project_id query parameter is quietly ignored by server, returning all city listings regardless of project_id",
+      "how_found": "Called GET /v1/listings?project_id=P30001 which returned all 3668 total results",
+      "impact": "Medium - filtering listings by project must be executed client-side",
+      "evidence": [
+        "DWE-3002501"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "filters",
+      "documented": "Inactive, expired, and withdrawn listings are excluded server-side and safe to show to users",
+      "actual": "Server returns 740 inactive listing records (is_live: false) in the response",
+      "how_found": "Audited is_live boolean property across all retrievable listing records",
+      "impact": "High - frontend must filter by is_live === true to prevent displaying inactive listings",
+      "evidence": [
+        "100-3000777",
+        "SQU-3002128",
+        "100-3001183",
+        "SQU-3002040",
+        "SQU-3002794",
+        "100-3000516",
+        "DWE-3002738",
+        "100-3000344"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "duplicates",
+      "documented": "Every listing_id is globally unique and each corresponds to exactly one physical property",
+      "actual": "The dataset contains only 50 unique listing records; server repeats/loops through these 50 records 74 times to reach 3700 total retrievable records",
+      "how_found": "Deduplicated all retrievable records by listing_id and computed frequency distribution",
+      "impact": "High - un-deduplicated listings clutter UI with 74 duplicates per property",
+      "evidence": [
+        "DWE-3002501",
+        "SQU-3001712",
+        "DWE-3002085",
+        "100-3000777",
+        "MAG-3001756"
+      ]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "units",
+      "documented": "Money is in integer Indian Rupees everywhere in the API; price_min and price_max in rupees",
+      "actual": "price_min and price_max in project objects are float values in Lakhs (e.g. 40.9 = 40.9 Lakhs) or Crores (e.g. 3.34 = 3.34 Crores)",
+      "how_found": "Inspected price_min and price_max values across all retrievable project records",
+      "impact": "High - raw values presented as INR make projects appear 100,000x cheaper than actual",
+      "evidence": [
+        "P30001",
+        "P30015",
+        "P30030"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "units",
+      "documented": "Area is in integer square feet everywhere in the API",
+      "actual": "Listings from magichomes report carpet_area and super_built_up_area in square meters instead of square feet",
+      "how_found": "Calculated price per sq ft for magichomes listings yielding >100,000 INR/sqft for standard apartments",
+      "impact": "High - carpet area requires conversion (* 10.7639) to display accurate square footage",
+      "evidence": [
+        "MAG-3001035",
+        "MAG-3001327",
+        "MAG-3001519",
+        "MAG-3002851",
+        "MAG-3003434"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "fraud",
+      "documented": "Verified honest sale listings",
+      "actual": "Listing ZER-3001479 is a fake lead-gen listing soliciting token deposit payments in description text",
+      "how_found": "Scanned listing descriptions for advance token payment scam phrasing",
+      "impact": "Medium - fake listings must be flagged and hidden from genuine users",
+      "evidence": [
+        "ZER-3001479"
+      ]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "consistency",
+      "documented": "total_listings in project records is recomputed and agrees with listings available for that project",
+      "actual": "total_listings field in project objects contradicts the actual number of listings available for 423 out of 450 project records",
+      "how_found": "Cross-referenced total_listings in project records against listing count per project_id in /v1/listings",
+      "impact": "Medium - total listings count must be computed client-side from actual listings dataset",
+      "evidence": [
+        "P30001",
+        "P30002",
+        "P30003",
+        "P30004",
+        "P30005"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "sorting",
+      "documented": "sort_by=price sorts listings by price in rupees",
+      "actual": "Sorting by price returns corrupted negative price integers for top results",
+      "how_found": "Called GET /v1/listings?sort_by=price&order=desc",
+      "impact": "Medium - sorting by price on server corrupts price values",
+      "evidence": [
+        "DWE-3000693",
+        "100-3000777"
+      ]
+    }
+  ]
+}

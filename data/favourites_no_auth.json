@@ -1,0 +1,12 @@
+{
+  "status": 404,
+  "data": {
+    "detail": "Not Found"
+  },
+  "headers": {
+    "alt-svc": "h3=\":443\"; ma=2592000",
+    "content-length": "22",
+    "content-type": "application/json",
+    "date": "Sat, 12 Sep 2026 11:28:01 GMT"
+  }
+}
